@@ -2,339 +2,1935 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Система учета мероприятий</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Виктория · Система учёта деятельности</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@600;800&display=swap');
+
+:root {
+  --bg:       #f0f2f7;
+  --surface:  #ffffff;
+  --surface2: #f7f8fc;
+  --border:   #e2e6f0;
+  --accent:   #1a56db;
+  --accent-h: #1446b8;
+  --accent-s: #e8effe;
+  --danger:   #e53e3e;
+  --warn:     #d97706;
+  --green:    #059669;
+  --gold:     #b45309;
+  --text:     #1a1f36;
+  --text-2:   #6b7694;
+  --text-3:   #9ba5c0;
+  --radius:   14px;
+  --shadow:   0 2px 12px rgba(26,86,219,.08);
+  --shadow-lg:0 8px 32px rgba(26,86,219,.13);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-    font-family: 'Segoe UI', sans-serif;
-    background: #f4f6f9;
-    margin: 0;
+  font-family: 'Golos Text', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-.container {
-    max-width: 900px;
-    margin: 40px auto;
-    background: white;
-    padding: 25px;
-    border-radius: 10px;
+/* ── LAYOUT ──────────────────────────────────────── */
+.shell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
-h2 {
-    margin-top: 30px;
+.sidebar-logo {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--border);
 }
 
-input, select {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
+.sidebar-logo .org {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -.3px;
+  line-height: 1.2;
 }
 
-button {
-    margin-top: 10px;
-    padding: 8px;
-    background: #3f51b5;
-    color: white;
-    border: none;
+.sidebar-logo .sub {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 3px;
 }
 
+.nav { padding: 12px 10px; flex: 1; }
+
+.nav-section {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-3);
+  padding: 10px 10px 4px;
+  font-weight: 600;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: all .18s;
+  user-select: none;
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--accent-s); color: var(--accent); }
+.nav-item .icon { font-size: 17px; flex-shrink: 0; }
+.nav-item .badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.main { flex: 1; overflow-x: hidden; }
+
+.page { display: none; padding: 32px 36px; }
+.page.active { display: block; }
+
+/* ── HEADER ──────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -.5px;
+  line-height: 1.2;
+}
+
+.page-sub { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+
+/* ── KPI CARDS ───────────────────────────────────── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 18px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.kpi.k1::after { background: var(--accent); }
+.kpi.k2::after { background: var(--green); }
+.kpi.k3::after { background: var(--warn); }
+.kpi.k4::after { background: #7c3aed; }
+.kpi.k5::after { background: var(--gold); }
+.kpi.k6::after { background: #db2777; }
+
+.kpi-label { font-size: 11px; color: var(--text-2); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; margin-bottom: 8px; }
+.kpi-value { font-family: 'Unbounded', sans-serif; font-size: 30px; font-weight: 800; color: var(--text); line-height: 1; }
+.kpi-hint  { font-size: 11px; color: var(--text-3); margin-top: 5px; }
+
+/* ── CARDS / PANELS ──────────────────────────────── */
 .card {
-    border: 1px solid #ddd;
-    padding: 10px;
-    margin-top: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
-.hidden { display:none; }
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
 
+.card-title { font-size: 15px; font-weight: 700; }
+.card-body  { padding: 20px; }
+
+/* ── BUTTONS ─────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all .18s;
+  white-space: nowrap;
+}
+
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-h); transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: #fff5f5; color: var(--danger); border: 1px solid #fed7d7; }
+.btn-danger:hover { background: var(--danger); color: white; }
+.btn-sm { padding: 5px 12px; font-size: 13px; border-radius: 8px; }
+.btn-green { background: #ecfdf5; color: var(--green); border: 1px solid #a7f3d0; }
+.btn-green:hover { background: var(--green); color: white; }
+
+/* ── FORM ────────────────────────────────────────── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+.form-full { grid-column: 1 / -1; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
+
+.field input, .field select, .field textarea {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 13px;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color .18s, box-shadow .18s;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26,86,219,.1);
+}
+
+.field textarea { resize: vertical; min-height: 80px; }
+
+.toggle-row {
+  display: flex;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 5px;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 9px;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-2);
+  transition: all .2s;
+}
+
+.toggle-btn.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 2px 8px rgba(26,86,219,.25);
+}
+
+/* ── RESULT ROWS ─────────────────────────────────── */
+.result-row {
+  display: grid;
+  grid-template-columns: 1fr 160px 90px 80px 36px;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.result-row input, .result-row select {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+
+.result-row input:focus, .result-row select:focus { border-color: var(--accent); }
+
+.del-btn {
+  width: 34px; height: 34px;
+  border: none;
+  background: #fff0f0;
+  color: var(--danger);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+
+.del-btn:hover { background: var(--danger); color: white; }
+
+/* ── TABLE ───────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+
+thead th {
+  background: var(--surface2);
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-2);
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+thead th:hover { color: var(--accent); }
+thead th.sort-up::after   { content: ' ↑'; color: var(--accent); }
+thead th.sort-down::after { content: ' ↓'; color: var(--accent); }
+
+tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+tbody td { padding: 10px 14px; }
+
+/* ── BADGES ──────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-ext  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge-int  { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-intl { background: #fdf4ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.badge-all  { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.badge-city { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge-dist { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+
+/* ── FILTERS ─────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-bar .field { min-width: 140px; }
+.filter-bar .field label { font-size: 11px; }
+.filter-bar .field input,
+.filter-bar .field select {
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+/* ── STAT BREAKDOWN ──────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.stat-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-icon { font-size: 24px; flex-shrink: 0; }
+.stat-val  { font-size: 20px; font-weight: 700; color: var(--text); font-family: 'Unbounded', sans-serif; }
+.stat-lbl  { font-size: 12px; color: var(--text-2); }
+
+/* ── BAR CHART ───────────────────────────────────── */
+.bar-list { display: flex; flex-direction: column; gap: 9px; }
+.bar-row-ui { display: flex; align-items: center; gap: 10px; }
+.bar-label-ui { width: 160px; font-size: 13px; color: var(--text); flex-shrink: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+.bar-track-ui { flex: 1; background: var(--surface2); border-radius: 6px; height: 26px; overflow: hidden; border: 1px solid var(--border); }
+.bar-fill-ui  {
+  height: 100%;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  min-width: 36px;
+  transition: width .9s cubic-bezier(.22,.61,.36,1);
+}
+
+/* ── MODAL ───────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26,31,54,.45);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--surface);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 760px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(20px);
+  transition: transform .2s;
+}
+
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-header {
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title { font-family: 'Unbounded', sans-serif; font-size: 17px; font-weight: 800; }
+
+.modal-close {
+  width: 34px; height: 34px;
+  border: none;
+  background: var(--surface2);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-2);
+  transition: all .15s;
+}
+.modal-close:hover { background: #fee2e2; color: var(--danger); }
+
+.modal-body { padding: 24px; }
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ── TOAST ───────────────────────────────────────── */
+.toast-area { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+
+.toast {
+  background: var(--text);
+  color: white;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn .3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 320px;
+}
+
+.toast.success { background: var(--green); }
+.toast.error   { background: var(--danger); }
+
+@keyframes toastIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+
+/* ── EMPTY STATE ─────────────────────────────────── */
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-3);
+}
+.empty .e-icon { font-size: 48px; margin-bottom: 12px; }
+.empty .e-text { font-size: 15px; margin-bottom: 16px; }
+
+/* ── SECTION DIVIDER ─────────────────────────────── */
+.section-hdr {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--text-2);
+  font-weight: 700;
+  margin: 20px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-hdr::after { content:''; flex:1; height:1px; background: var(--border); }
+
+/* ── TABS ────────────────────────────────────────── */
+.tab-row { display:flex; gap:4px; border-bottom:1px solid var(--border); padding: 0 20px; margin-bottom: 0; }
+.tab {
+  padding: 11px 16px;
+  border: none;
+  background: transparent;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all .15s;
+  border-radius: 8px 8px 0 0;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-pane { display: none; padding: 20px; }
+.tab-pane.active { display: block; }
+
+/* ── LEVEL BADGE MAP ─────────────────────────────── */
+.lvl { padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.lvl-intl   { background:#fdf4ff; color:#7e22ce; }
+.lvl-all    { background:#fff7ed; color:#c2410c; }
+.lvl-region { background:#fefce8; color:#a16207; }
+.lvl-city   { background:#eff6ff; color:#1d4ed8; }
+.lvl-dist   { background:#f0fdf4; color:#15803d; }
+.lvl-school { background:#f1f5f9; color:#475569; }
+
+/* ── PROGRESS ────────────────────────────────────── */
+.progress-bar { background: var(--surface2); border-radius: 99px; height: 8px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width .8s; }
+
+/* ── RESPONSIVE ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .page { padding: 20px 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .result-row { grid-template-columns: 1fr 1fr; }
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── UTILITY ─────────────────────────────────────── */
+.gap-8 { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.gap-12 { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.hidden { display: none !important; }
+.text-right { text-align: right; }
+.text-dim { color: var(--text-2); font-size: 13px; }
+.fw-700 { font-weight: 700; }
+.mono { font-family: 'Unbounded', sans-serif; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 </style>
 </head>
-
 <body>
 
-<div class="container">
-
-<h1>Система учета мероприятий</h1>
-
-<!-- ФОРМА -->
-<h2>Создать мероприятие</h2>
-
-<label>Тип:</label>
-<select id="type" onchange="toggleType()">
-<option value="">-- выбрать --</option>
-<option value="external">Внешнее</option>
-<option value="internal">Внутреннее</option>
-</select>
-
-<label>Дата:</label>
-<input type="date" id="date">
-
-<label>Название:</label>
-<input type="text" id="title">
-
-<label>Объединение:</label>
-<input type="text" id="club">
-
-<div id="external" class="hidden">
-<label>Уровень:</label>
-<select id="level">
-<option>Городской</option>
-<option>Региональный</option>
-<option>Всероссийский</option>
-<option>Международный</option>
-</select>
-
-<label>Участников:</label>
-<input type="number" id="participants">
-
-<h3>Результаты</h3>
-<div id="results"></div>
-<button onclick="addResult()">+ результат</button>
+<!-- ───── MODAL ───────────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Мероприятие</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-primary" onclick="saveEvent()">💾 Сохранить</button>
+    </div>
+  </div>
 </div>
 
-<div id="internal" class="hidden">
-<label>Тип активности:</label>
-<input type="text" id="activity">
+<!-- ───── TOAST ───────────────────────────────────── -->
+<div class="toast-area" id="toastArea"></div>
 
-<label>Участников:</label>
-<input type="number" id="int_participants">
+<!-- ───── SHELL ───────────────────────────────────── -->
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="org">ДЮЦ «Виктория»</div>
+      <div class="sub">Система учёта деятельности</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Главное</div>
+      <div class="nav-item active" onclick="gotoPage('dash')" data-page="dash">
+        <span class="icon">🏠</span> Дашборд
+      </div>
+      <div class="nav-item" onclick="gotoPage('events')" data-page="events">
+        <span class="icon">📋</span> Мероприятия
+        <span class="badge" id="navBadge">0</span>
+      </div>
+
+      <div class="nav-section">Аналитика</div>
+      <div class="nav-item" onclick="gotoPage('analytics')" data-page="analytics">
+        <span class="icon">📊</span> Статистика
+      </div>
+      <div class="nav-item" onclick="gotoPage('teachers')" data-page="teachers">
+        <span class="icon">👩‍🏫</span> Педагоги
+      </div>
+
+      <div class="nav-section">Система</div>
+      <div class="nav-item" onclick="gotoPage('export')" data-page="export">
+        <span class="icon">📤</span> Экспорт
+      </div>
+      <div class="nav-item" onclick="gotoPage('settings')" data-page="settings">
+        <span class="icon">⚙️</span> Настройки
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      Версия 2.0 · 2025
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ══ DASHBOARD ══════════════════════════════ -->
+    <section class="page active" id="page-dash">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Дашборд</div>
+          <div class="page-sub" id="dashSubtitle">Добро пожаловать в систему</div>
+        </div>
+        <button class="btn btn-primary" onclick="openNewModal()">+ Новое мероприятие</button>
+      </div>
+
+      <div class="kpi-row" id="kpiRow"></div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📅 Последние мероприятия</span>
+            <button class="btn btn-ghost btn-sm" onclick="gotoPage('events')">Все →</button>
+          </div>
+          <div id="recentList" style="min-height:100px"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🏆 Победы по уровням</span>
+          </div>
+          <div class="card-body" id="levelChart"></div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📈 Активность по месяцам</span>
+          </div>
+          <div class="card-body" id="monthChart"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🎯 Топ объединений</span>
+          </div>
+          <div class="card-body" id="clubChart"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ EVENTS ══════════════════════════════════ -->
+    <section class="page" id="page-events">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Мероприятия</div>
+          <div class="page-sub">Полный журнал деятельности</div>
+        </div>
+        <button class="btn btn-primary" onclick="openNewModal()">+ Добавить</button>
+      </div>
+
+      <div class="card">
+        <div class="filter-bar" id="filterBar">
+          <div class="field">
+            <label>Поиск</label>
+            <input type="text" id="fSearch" placeholder="Название, объединение..." oninput="renderTable()">
+          </div>
+          <div class="field">
+            <label>Тип</label>
+            <select id="fType" onchange="renderTable()">
+              <option value="">Все типы</option>
+              <option value="external">Внешнее</option>
+              <option value="internal">Внутреннее</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Уровень</label>
+            <select id="fLevel" onchange="renderTable()">
+              <option value="">Все уровни</option>
+              <option>Международный</option>
+              <option>Всероссийский</option>
+              <option>Региональный</option>
+              <option>Городской</option>
+              <option>Окружной</option>
+              <option>Школьный/внутренний</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Месяц</label>
+            <select id="fMonth" onchange="renderTable()">
+              <option value="">Все месяцы</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Объединение</label>
+            <select id="fClub" onchange="renderTable()">
+              <option value="">Все</option>
+            </select>
+          </div>
+          <div style="margin-left:auto; display:flex; gap:8px; align-items:flex-end;">
+            <button class="btn btn-ghost btn-sm" onclick="resetFilters()">Сбросить</button>
+            <span class="text-dim" id="resultCount" style="white-space:nowrap"></span>
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <table id="eventsTable">
+            <thead>
+              <tr>
+                <th onclick="sortTable('date')">Дата</th>
+                <th onclick="sortTable('type')">Тип</th>
+                <th onclick="sortTable('title')">Название</th>
+                <th onclick="sortTable('club')">Объединение</th>
+                <th onclick="sortTable('level')">Уровень</th>
+                <th onclick="sortTable('participants')">Участников</th>
+                <th>Результаты</th>
+                <th onclick="sortTable('wins')">Побед</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="eventsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ ANALYTICS ═══════════════════════════════ -->
+    <section class="page" id="page-analytics">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Статистика</div>
+          <div class="page-sub">Сводная аналитика по всей деятельности</div>
+        </div>
+      </div>
+
+      <div class="kpi-row" id="analyticsKpi"></div>
+
+      <div class="tab-row">
+        <button class="tab active" onclick="switchAnalTab('awards')">🏅 Награды</button>
+        <button class="tab" onclick="switchAnalTab('levels')">🌐 По уровням</button>
+        <button class="tab" onclick="switchAnalTab('months')">📅 По месяцам</button>
+        <button class="tab" onclick="switchAnalTab('clubs')">🎨 По объединениям</button>
+      </div>
+
+      <div class="card" style="border-top: none; border-radius: 0 0 var(--radius) var(--radius);">
+        <div class="tab-pane active" id="anal-awards">
+          <div class="stat-grid" id="awardsBreakdown"></div>
+        </div>
+        <div class="tab-pane" id="anal-levels">
+          <div id="levelBreakdownTable"></div>
+        </div>
+        <div class="tab-pane" id="anal-months">
+          <div class="bar-list" id="monthsBreakdown"></div>
+        </div>
+        <div class="tab-pane" id="anal-clubs">
+          <div class="bar-list" id="clubsBreakdown"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ TEACHERS ════════════════════════════════ -->
+    <section class="page" id="page-teachers">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Педагоги</div>
+          <div class="page-sub">Статистика и активность по педагогам</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="filter-bar">
+          <div class="field">
+            <label>Поиск педагога</label>
+            <input type="text" id="teacherSearch" placeholder="Фамилия..." oninput="renderTeacherPage()">
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Педагог</th>
+                <th>Объединение</th>
+                <th>Мероприятий</th>
+                <th>Участников</th>
+                <th>Побед</th>
+                <th>Гран-При</th>
+                <th>Лауреаты</th>
+                <th>Дипломанты</th>
+                <th>1-е места</th>
+              </tr>
+            </thead>
+            <tbody id="teacherBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ EXPORT ══════════════════════════════════ -->
+    <section class="page" id="page-export">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Экспорт данных</div>
+          <div class="page-sub">Выгрузите данные в нужном формате</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">📊 Excel — полный журнал</span></div>
+          <div class="card-body">
+            <p class="text-dim" style="margin-bottom:14px">Все мероприятия с детализацией наград по строкам</p>
+            <div class="field" style="margin-bottom:12px">
+              <label>Фильтр по месяцу</label>
+              <select id="expMonth">
+                <option value="">Все</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:12px">
+              <label>Фильтр по типу</label>
+              <select id="expType">
+                <option value="">Все</option>
+                <option value="external">Внешние</option>
+                <option value="internal">Внутренние</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="exportExcel('journal')">⬇ Скачать Excel</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">🏆 Excel — по педагогам</span></div>
+          <div class="card-body">
+            <p class="text-dim" style="margin-bottom:14px">Сводная таблица: каждая строка — педагог, колонки — все показатели</p>
+            <button class="btn btn-primary" onclick="exportExcel('teachers')">⬇ Скачать Excel</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">📄 Excel — сводная статистика</span></div>
+          <div class="card-body">
+            <p class="text-dim" style="margin-bottom:14px">KPI, разбивка по уровням, по месяцам — на одном листе</p>
+            <button class="btn btn-primary" onclick="exportExcel('summary')">⬇ Скачать Excel</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">💾 Резервная копия</span></div>
+          <div class="card-body">
+            <p class="text-dim" style="margin-bottom:14px">Скачать всю базу как JSON. Используйте для переноса данных или резервного копирования</p>
+            <button class="btn btn-green" onclick="exportJSON()">⬇ Скачать JSON</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">📥 Восстановить из JSON</span></div>
+          <div class="card-body">
+            <p class="text-dim" style="margin-bottom:14px">Загрузить ранее сохранённую резервную копию</p>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+            <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">📂 Выбрать файл</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══ SETTINGS ════════════════════════════════ -->
+    <section class="page" id="page-settings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Настройки</div>
+          <div class="page-sub">Конфигурация системы</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 860px;">
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">🏫 Организация</span></div>
+          <div class="card-body">
+            <div class="field" style="margin-bottom:12px">
+              <label>Название организации</label>
+              <input type="text" id="sOrgName" value="">
+            </div>
+            <div class="field" style="margin-bottom:12px">
+              <label>Отчётный год</label>
+              <input type="number" id="sYear" value="2025">
+            </div>
+            <button class="btn btn-primary" onclick="saveSettings()">Сохранить</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">🎨 Объединения</span></div>
+          <div class="card-body">
+            <p class="text-dim" style="margin-bottom:10px">Управление справочником объединений</p>
+            <div id="clubList" style="margin-bottom:12px"></div>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="newClub" placeholder="Название объединения..." style="flex:1; background:var(--surface2); border:1.5px solid var(--border); border-radius:8px; padding:7px 10px; font-family:'Golos Text',sans-serif; font-size:13px; outline:none;">
+              <button class="btn btn-primary btn-sm" onclick="addClub()">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚠️ Данные</span></div>
+          <div class="card-body">
+            <p class="text-dim" style="margin-bottom:14px">Удалить все мероприятия из базы. Это действие необратимо!</p>
+            <button class="btn btn-danger" onclick="clearAll()">🗑 Очистить базу</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">ℹ️ О системе</span></div>
+          <div class="card-body">
+            <p class="text-dim">Мини-ERP для учёта деятельности педагогов. Данные хранятся в браузере (localStorage). Регулярно делайте резервные копии через вкладку «Экспорт».</p>
+            <br>
+            <p class="text-dim"><b>Версия:</b> 2.0<br><b>Год:</b> 2025</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
 </div>
 
-<button onclick="save()">Сохранить</button>
-
-<!-- СПИСОК -->
-<h2>Мои мероприятия</h2>
-<div id="list"></div>
-
-<h2>Статистика</h2>
-
-<div id="stats"></div>    
-
-</div>
-
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCRIPT -->
+<!-- ═══════════════════════════════════════════════ -->
 <script>
+// ──────────────────────────────────────────────────
+// DB helpers
+// ──────────────────────────────────────────────────
+const DB = {
+  get events()   { return JSON.parse(localStorage.getItem('vtk_events')  || '[]'); },
+  set events(v)  { localStorage.setItem('vtk_events', JSON.stringify(v)); },
+  get settings() { return JSON.parse(localStorage.getItem('vtk_settings') || '{"org":"ДЮЦ «Виктория»","year":2025,"clubs":[]}'); },
+  set settings(v){ localStorage.setItem('vtk_settings', JSON.stringify(v)); },
+};
 
-let editIndex = null;
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
-function toggleType() {
-    external.classList.add("hidden");
-    internal.classList.add("hidden");
+// ──────────────────────────────────────────────────
+// NAVIGATION
+// ──────────────────────────────────────────────────
+function gotoPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelector(`[data-page="${name}"]`)?.classList.add('active');
 
-    if (type.value === "external") external.classList.remove("hidden");
-    if (type.value === "internal") internal.classList.remove("hidden");
+  if (name === 'dash')      renderDash();
+  if (name === 'events')    { populateFilters(); renderTable(); }
+  if (name === 'analytics') renderAnalytics();
+  if (name === 'teachers')  renderTeacherPage();
+  if (name === 'export')    populateExport();
+  if (name === 'settings')  renderSettings();
 }
 
-function addResult(data = {}) {
-    const div = document.createElement("div");
-    div.className = "card";
+// ──────────────────────────────────────────────────
+// MODAL
+// ──────────────────────────────────────────────────
+let editId = null;
 
-    div.innerHTML = `
-        <input placeholder="Номинация" class="nom" value="${data.nomination||""}">
-        
-        <select class="rtype">
-            <option value="grandprix">Гран-при</option>
-            <option value="laureate">Лауреат</option>
-            <option value="diploma">Дипломант</option>
-            <option value="place">Место</option>
+function openNewModal() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = '➕ Новое мероприятие';
+  document.getElementById('modalBody').innerHTML = buildForm({});
+  document.getElementById('modalOverlay').classList.add('open');
+  toggleTypeForm();
+}
+
+function openEditModal(id) {
+  const ev = DB.events.find(e => e.id === id);
+  if (!ev) return;
+  editId = id;
+  document.getElementById('modalTitle').textContent = '✏️ Редактировать мероприятие';
+  document.getElementById('modalBody').innerHTML = buildForm(ev);
+  document.getElementById('modalOverlay').classList.add('open');
+  toggleTypeForm();
+  if (ev.results) ev.results.forEach(r => addResultRow(r));
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editId = null;
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function buildForm(ev) {
+  const s = DB.settings;
+  const clubOpts = s.clubs.map(c => `<option ${c === ev.club ? 'selected' : ''}>${c}</option>`).join('');
+
+  return `
+  <div class="form-grid">
+    <div class="field form-full">
+      <label>Тип мероприятия</label>
+      <div class="toggle-row">
+        <button type="button" class="toggle-btn ${ev.type !== 'internal' ? 'active' : ''}"
+          onclick="setType('external')">🌐 Внешнее (конкурс)</button>
+        <button type="button" class="toggle-btn ${ev.type === 'internal' ? 'active' : ''}"
+          onclick="setType('internal')">🏠 Внутреннее</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Дата</label>
+      <input type="date" id="fDate" value="${ev.date || ''}">
+    </div>
+
+    <div class="field">
+      <label>Объединение</label>
+      <select id="fClubSel">
+        <option value="">-- выбрать --</option>
+        ${clubOpts}
+        <option value="__custom">✏️ Ввести вручную...</option>
+      </select>
+    </div>
+
+    <div class="field hidden" id="fClubCustomWrap">
+      <label>Объединение (вручную)</label>
+      <input type="text" id="fClubCustom" value="${ev.club || ''}" placeholder="Введите название">
+    </div>
+
+    <div class="field form-full">
+      <label>Название мероприятия</label>
+      <input type="text" id="fTitle" value="${ev.title || ''}" placeholder="Полное название...">
+    </div>
+
+    <div class="field">
+      <label>Педагог(и)</label>
+      <input type="text" id="fTeacher" value="${ev.teacher || ''}" placeholder="Иванов И.И., Петрова П.П.">
+    </div>
+
+    <div class="field">
+      <label>Место проведения</label>
+      <input type="text" id="fPlace" value="${ev.place || ''}" placeholder="Город, организация...">
+    </div>
+  </div>
+
+  <!-- EXTERNAL FIELDS -->
+  <div id="extFields">
+    <div class="section-hdr">Параметры конкурса</div>
+    <div class="form-grid cols3">
+      <div class="field">
+        <label>Уровень</label>
+        <select id="fLevel">
+          ${['Международный','Всероссийский','Региональный','Городской','Окружной','Школьный/внутренний']
+            .map(l => `<option ${l === ev.level ? 'selected' : ''}>${l}</option>`).join('')}
         </select>
-
-        <select class="degree">
-            <option value="">-</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
+      </div>
+      <div class="field">
+        <label>Направленность</label>
+        <select id="fDirection">
+          ${['Художественная','Техническая','Физкультурно-спортивная','Социально-гуманитарная','Туристско-краеведческая','Естественнонаучная']
+            .map(d => `<option ${d === ev.direction ? 'selected' : ''}>${d}</option>`).join('')}
         </select>
+      </div>
+      <div class="field">
+        <label>Участников</label>
+        <input type="number" id="fParticipants" min="0" value="${ev.participants || ''}">
+      </div>
+    </div>
 
-        <input type="number" class="count" placeholder="Кол-во" value="${data.count||""}">
+    <div class="section-hdr">Результаты / Награды</div>
+    <div id="resultRows"></div>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="addResultRow()">+ Добавить результат</button>
+  </div>
 
-        <button onclick="this.parentElement.remove()">Удалить</button>
-    `;
-
-    results.appendChild(div);
+  <!-- INTERNAL FIELDS -->
+  <div id="intFields" class="hidden">
+    <div class="section-hdr">Параметры внутреннего мероприятия</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Тип активности</label>
+        <input type="text" id="fActivity" value="${ev.activity || ''}" placeholder="Концерт, мастер-класс, выставка...">
+      </div>
+      <div class="field">
+        <label>Участников</label>
+        <input type="number" id="fIntParticipants" min="0" value="${ev.participants || ''}">
+      </div>
+    </div>
+    <div class="field mt-16">
+      <label>Примечания</label>
+      <textarea id="fNotes" placeholder="Любые комментарии...">${ev.notes || ''}</textarea>
+    </div>
+  </div>
+  `;
 }
 
-function getData() {
-    let data = {
-        type: type.value,
-        date: date.value,
-        title: title.value,
-        club: club.value
-    };
-
-    if (type.value === "external") {
-        data.level = level.value;
-        data.participants = participants.value;
-        data.results = [];
-
-        document.querySelectorAll(".card").forEach(r => {
-            data.results.push({
-                nomination: r.querySelector(".nom").value,
-                type: r.querySelector(".rtype").value,
-                degree: r.querySelector(".degree").value,
-                count: r.querySelector(".count").value
-            });
-        });
-    }
-
-    if (type.value === "internal") {
-        data.activity = activity.value;
-        data.participants = int_participants.value;
-    }
-
-    return data;
+function setType(t) {
+  document.querySelectorAll('.toggle-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && t === 'external') || (i === 1 && t === 'internal'));
+  });
+  document.getElementById('extFields').classList.toggle('hidden', t === 'internal');
+  document.getElementById('intFields').classList.toggle('hidden', t === 'external');
 }
 
-function save() {
-    let data = getData();
-    let arr = JSON.parse(localStorage.getItem("events") || "[]");
+function toggleTypeForm() { setType('external'); }
 
-    if (editIndex !== null) {
-        arr[editIndex] = data;
-        editIndex = null;
-    } else {
-        arr.push(data);
-    }
-
-    localStorage.setItem("events", JSON.stringify(arr));
-    render();
-    reset();
+function addResultRow(data = {}) {
+  const container = document.getElementById('resultRows');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'result-row';
+  div.innerHTML = `
+    <input placeholder="Номинация" class="r-nom" value="${data.nomination || ''}">
+    <select class="r-type" onchange="updateDegree(this)">
+      <option value="grandprix"  ${data.type==='grandprix' ?'selected':''}>🏆 Гран-При</option>
+      <option value="laureate"   ${data.type==='laureate'  ?'selected':''}>🌟 Лауреат</option>
+      <option value="diploma"    ${data.type==='diploma'   ?'selected':''}>📜 Дипломант</option>
+      <option value="place"      ${data.type==='place'     ?'selected':''}>🥇 Место</option>
+      <option value="prizor"     ${data.type==='prizor'    ?'selected':''}>🎖 Призёр</option>
+      <option value="cert"       ${data.type==='cert'      ?'selected':''}>📋 Сертификат</option>
+    </select>
+    <select class="r-deg">
+      <option value=""  ${!data.degree?'selected':''}>—</option>
+      <option value="1" ${data.degree=='1'?'selected':''}>1</option>
+      <option value="2" ${data.degree=='2'?'selected':''}>2</option>
+      <option value="3" ${data.degree=='3'?'selected':''}>3</option>
+    </select>
+    <input type="number" class="r-cnt" placeholder="Кол-во" min="0" value="${data.count || 1}">
+    <button type="button" class="del-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
 }
 
-function render() {
-    const list = document.getElementById("list");
-    list.innerHTML = "";
-    calculateStats();
+function saveEvent() {
+  const toggles = document.querySelectorAll('.toggle-btn');
+  const type = toggles[1]?.classList.contains('active') ? 'internal' : 'external';
 
-    let arr = JSON.parse(localStorage.getItem("events") || "[]");
+  const clubSel = document.getElementById('fClubSel');
+  let club = clubSel?.value || '';
+  if (club === '__custom') club = document.getElementById('fClubCustom')?.value || '';
 
-    arr.forEach((e, i) => {
-        let div = document.createElement("div");
-        div.className = "card";
+  const ev = {
+    id: editId || genId(),
+    type,
+    date: document.getElementById('fDate')?.value || '',
+    club,
+    title: document.getElementById('fTitle')?.value || '',
+    teacher: document.getElementById('fTeacher')?.value || '',
+    place: document.getElementById('fPlace')?.value || '',
+    createdAt: editId ? undefined : new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 
-        div.innerHTML = `
-            <b>${e.title}</b><br>
-            ${e.date} | ${e.type}<br>
-            <button onclick="edit(${i})">Редактировать</button>
-            <button onclick="removeItem(${i})">Удалить</button>
-        `;
-
-        list.appendChild(div);
+  if (type === 'external') {
+    ev.level     = document.getElementById('fLevel')?.value || '';
+    ev.direction = document.getElementById('fDirection')?.value || '';
+    ev.participants = Number(document.getElementById('fParticipants')?.value || 0);
+    ev.results = [];
+    document.querySelectorAll('.result-row').forEach(row => {
+      ev.results.push({
+        nomination: row.querySelector('.r-nom')?.value || '',
+        type:       row.querySelector('.r-type')?.value || '',
+        degree:     row.querySelector('.r-deg')?.value || '',
+        count:      Number(row.querySelector('.r-cnt')?.value || 0),
+      });
     });
+    ev.wins = calcWins(ev.results);
+  } else {
+    ev.activity    = document.getElementById('fActivity')?.value || '';
+    ev.participants = Number(document.getElementById('fIntParticipants')?.value || 0);
+    ev.notes       = document.getElementById('fNotes')?.value || '';
+    ev.results = [];
+    ev.wins = 0;
+  }
+
+  if (!ev.title) { toast('Введите название мероприятия', 'error'); return; }
+
+  let arr = DB.events;
+  if (editId) {
+    const idx = arr.findIndex(e => e.id === editId);
+    if (idx > -1) { ev.createdAt = arr[idx].createdAt; arr[idx] = ev; }
+  } else {
+    arr.push(ev);
+  }
+  DB.events = arr;
+
+  // Save new club to catalog
+  if (club && !DB.settings.clubs.includes(club)) {
+    const s = DB.settings;
+    s.clubs.push(club);
+    s.clubs.sort();
+    DB.settings = s;
+  }
+
+  closeModal();
+  refreshNavBadge();
+  toast(editId ? 'Мероприятие обновлено' : 'Мероприятие добавлено', 'success');
+
+  // Refresh current page
+  const active = document.querySelector('.page.active');
+  if (active?.id === 'page-dash')    renderDash();
+  if (active?.id === 'page-events')  renderTable();
+  if (active?.id === 'page-analytics') renderAnalytics();
 }
 
-function edit(i) {
-    let e = JSON.parse(localStorage.getItem("events"))[i];
-    editIndex = i;
+function calcWins(results = []) {
+  return results.reduce((s, r) => s + Number(r.count || 0), 0);
+}
 
-    type.value = e.type;
-    toggleType();
+function deleteEvent(id) {
+  if (!confirm('Удалить мероприятие?')) return;
+  DB.events = DB.events.filter(e => e.id !== id);
+  refreshNavBadge();
+  renderTable();
+  toast('Удалено', 'error');
+}
 
-    date.value = e.date;
-    title.value = e.title;
-    club.value = e.club;
+// ──────────────────────────────────────────────────
+// DASHBOARD
+// ──────────────────────────────────────────────────
+function renderDash() {
+  const arr = DB.events;
+  const s = DB.settings;
+  document.getElementById('dashSubtitle').textContent = `${s.org} · ${s.year} год`;
 
-    results.innerHTML = "";
+  const ext = arr.filter(e => e.type === 'external');
+  const totalParticipants = arr.reduce((s, e) => s + (e.participants || 0), 0);
+  const totalWins = ext.reduce((s, e) => s + (e.wins || 0), 0);
+  const grandPrix = ext.reduce((s, e) => s + (e.results || []).filter(r => r.type === 'grandprix').reduce((ss, r) => ss + (r.count || 0), 0), 0);
+  const intl = ext.filter(e => e.level === 'Международный').length;
 
-    if (e.type === "external") {
-        level.value = e.level;
-        participants.value = e.participants;
-        e.results.forEach(r => addResult(r));
+  document.getElementById('kpiRow').innerHTML = [
+    { label:'Всего мероприятий', val: arr.length, hint:'в базе', cls:'k1' },
+    { label:'Участников', val: totalParticipants.toLocaleString('ru'), hint:'суммарно', cls:'k2' },
+    { label:'Всего побед', val: totalWins, hint:'наград и мест', cls:'k3' },
+    { label:'Гран-При', val: grandPrix, hint:'высших наград', cls:'k4' },
+    { label:'Международных', val: intl, hint:'мероприятий', cls:'k5' },
+    { label:'Внешних конкурсов', val: ext.length, hint:'из ' + arr.length, cls:'k6' },
+  ].map(k => `
+    <div class="kpi ${k.cls}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.val}</div>
+      <div class="kpi-hint">${k.hint}</div>
+    </div>`).join('');
+
+  // Recent
+  const recent = [...arr].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 6);
+  document.getElementById('recentList').innerHTML = recent.length ? recent.map(e => `
+    <div style="display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid var(--border);">
+      <span style="font-size:20px">${e.type==='external'?'🏆':'🏠'}</span>
+      <div style="flex:1; min-width:0;">
+        <div style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${e.title || '—'}</div>
+        <div style="font-size:12px; color:var(--text-2)">${formatDate(e.date)} · ${e.club || 'без объединения'}</div>
+      </div>
+      ${e.wins ? `<span class="badge badge-ext">+${e.wins} пб.</span>` : ''}
+    </div>
+  `).join('') : '<div class="empty"><div class="e-icon">📭</div><div class="e-text">Нет мероприятий</div><button class="btn btn-primary" onclick="openNewModal()">Добавить первое</button></div>';
+
+  // Level chart
+  const byLevel = {};
+  ext.forEach(e => { byLevel[e.level] = (byLevel[e.level] || 0) + (e.wins || 0); });
+  const levelColors = { 'Международный':'#7c3aed','Всероссийский':'#dc2626','Региональный':'#d97706','Городской':'#1a56db','Окружной':'#059669','Школьный/внутренний':'#64748b' };
+  const maxL = Math.max(...Object.values(byLevel), 1);
+  document.getElementById('levelChart').innerHTML = Object.entries(byLevel).length ?
+    `<div class="bar-list">${Object.entries(byLevel).map(([k, v]) => `
+      <div class="bar-row-ui">
+        <div class="bar-label-ui" title="${k}">${k}</div>
+        <div class="bar-track-ui">
+          <div class="bar-fill-ui" style="background:${levelColors[k]||'#1a56db'};width:${Math.round(v/maxL*100)}%">${v}</div>
+        </div>
+      </div>`).join('')}</div>` : '<div class="text-dim" style="padding:20px">Нет данных</div>';
+
+  // Month chart
+  const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const byMonth = {};
+  arr.forEach(e => {
+    if (e.date) {
+      const m = new Date(e.date).getMonth();
+      byMonth[m] = (byMonth[m] || 0) + 1;
     }
+  });
+  const maxM = Math.max(...Object.values(byMonth), 1);
+  document.getElementById('monthChart').innerHTML = Object.keys(byMonth).length ?
+    `<div class="bar-list">${Object.entries(byMonth).sort((a,b) => a[0]-b[0]).map(([m, v]) => `
+      <div class="bar-row-ui">
+        <div class="bar-label-ui">${MONTHS[m]}</div>
+        <div class="bar-track-ui">
+          <div class="bar-fill-ui" style="background:#1a56db;width:${Math.round(v/maxM*100)}%">${v} меропр.</div>
+        </div>
+      </div>`).join('')}</div>` : '<div class="text-dim" style="padding:20px">Нет данных</div>';
 
-    if (e.type === "internal") {
-        activity.value = e.activity;
-        int_participants.value = e.participants;
+  // Club chart
+  const byClub = {};
+  arr.forEach(e => { if (e.club) byClub[e.club] = (byClub[e.club] || 0) + 1; });
+  const top = Object.entries(byClub).sort((a, b) => b[1] - a[1]).slice(0, 7);
+  const maxC = Math.max(...top.map(([,v]) => v), 1);
+  document.getElementById('clubChart').innerHTML = top.length ?
+    `<div class="bar-list">${top.map(([k, v]) => `
+      <div class="bar-row-ui">
+        <div class="bar-label-ui" title="${k}">${k}</div>
+        <div class="bar-track-ui">
+          <div class="bar-fill-ui" style="background:#059669;width:${Math.round(v/maxC*100)}%">${v}</div>
+        </div>
+      </div>`).join('')}</div>` : '<div class="text-dim" style="padding:20px">Нет данных</div>';
+}
+
+// ──────────────────────────────────────────────────
+// EVENTS TABLE
+// ──────────────────────────────────────────────────
+let sortCol = 'date', sortDir = -1;
+
+function populateFilters() {
+  const arr = DB.events;
+  const months = [...new Set(arr.filter(e => e.date).map(e => {
+    const d = new Date(e.date);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  }))].sort();
+  const clubs = [...new Set(arr.map(e => e.club).filter(Boolean))].sort();
+
+  const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+  const fMonth = document.getElementById('fMonth');
+  fMonth.innerHTML = '<option value="">Все месяцы</option>';
+  months.forEach(m => {
+    const [y, mo] = m.split('-');
+    fMonth.innerHTML += `<option value="${m}">${MONTHS[parseInt(mo)-1]} ${y}</option>`;
+  });
+
+  const fClub = document.getElementById('fClub');
+  fClub.innerHTML = '<option value="">Все</option>';
+  clubs.forEach(c => fClub.innerHTML += `<option>${c}</option>`);
+}
+
+function getFilteredEvents() {
+  let arr = DB.events;
+  const q  = document.getElementById('fSearch')?.value.toLowerCase() || '';
+  const t  = document.getElementById('fType')?.value || '';
+  const lv = document.getElementById('fLevel')?.value || '';
+  const mo = document.getElementById('fMonth')?.value || '';
+  const cl = document.getElementById('fClub')?.value || '';
+
+  if (q)  arr = arr.filter(e => (e.title + e.club + e.teacher + e.place).toLowerCase().includes(q));
+  if (t)  arr = arr.filter(e => e.type === t);
+  if (lv) arr = arr.filter(e => e.level === lv);
+  if (mo) arr = arr.filter(e => e.date?.startsWith(mo));
+  if (cl) arr = arr.filter(e => e.club === cl);
+
+  arr.sort((a, b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (sortCol === 'participants' || sortCol === 'wins') { va = +(va||0); vb = +(vb||0); }
+    else { va = String(va||''); vb = String(vb||''); }
+    return va < vb ? -sortDir : va > vb ? sortDir : 0;
+  });
+
+  return arr;
+}
+
+function sortTable(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = -1; }
+  renderTable();
+}
+
+function renderTable() {
+  const arr = getFilteredEvents();
+  document.getElementById('resultCount').textContent = `${arr.length} из ${DB.events.length}`;
+
+  const body = document.getElementById('eventsBody');
+  body.innerHTML = arr.length ? arr.map(e => `
+    <tr>
+      <td style="white-space:nowrap">${formatDate(e.date)}</td>
+      <td><span class="badge ${e.type==='external'?'badge-ext':'badge-int'}">${e.type==='external'?'Внешнее':'Внутреннее'}</span></td>
+      <td style="max-width:240px">
+        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${e.title}">${e.title || '—'}</div>
+        ${e.teacher ? `<div style="font-size:11px;color:var(--text-2)">${e.teacher}</div>` : ''}
+      </td>
+      <td>${e.club || '—'}</td>
+      <td>${e.level ? `<span class="lvl ${levelClass(e.level)}">${e.level}</span>` : '—'}</td>
+      <td style="text-align:center">${e.participants || 0}</td>
+      <td style="max-width:180px">${resultsSummary(e.results)}</td>
+      <td style="text-align:center;font-weight:700;color:${(e.wins||0) > 0 ? 'var(--green)' : 'var(--text-2)'}">${e.wins || 0}</td>
+      <td>
+        <div class="gap-8">
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal('${e.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteEvent('${e.id}')">🗑</button>
+        </div>
+      </td>
+    </tr>
+  `).join('') : `<tr><td colspan="9"><div class="empty"><div class="e-icon">🔍</div><div class="e-text">Ничего не найдено</div></div></td></tr>`;
+}
+
+function resultsSummary(results = []) {
+  if (!results?.length) return '<span style="color:var(--text-3)">—</span>';
+  const counts = { grandprix: 0, laureate: 0, diploma: 0, place: 0, prizor: 0, cert: 0 };
+  results.forEach(r => counts[r.type] = (counts[r.type] || 0) + (r.count || 0));
+  const parts = [];
+  if (counts.grandprix) parts.push(`🏆${counts.grandprix}`);
+  if (counts.laureate)  parts.push(`🌟${counts.laureate}`);
+  if (counts.diploma)   parts.push(`📜${counts.diploma}`);
+  if (counts.place)     parts.push(`🥇${counts.place}`);
+  if (counts.prizor)    parts.push(`🎖${counts.prizor}`);
+  if (counts.cert)      parts.push(`📋${counts.cert}`);
+  return `<span style="font-size:12px">${parts.join(' ')}</span>`;
+}
+
+function levelClass(l) {
+  if (!l) return '';
+  if (l.includes('Межд'))   return 'lvl-intl';
+  if (l.includes('Всерос')) return 'lvl-all';
+  if (l.includes('Регион')) return 'lvl-region';
+  if (l.includes('Город'))  return 'lvl-city';
+  if (l.includes('Округ'))  return 'lvl-dist';
+  return 'lvl-school';
+}
+
+function resetFilters() {
+  ['fSearch','fType','fLevel','fMonth','fClub'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  renderTable();
+}
+
+// ──────────────────────────────────────────────────
+// ANALYTICS
+// ──────────────────────────────────────────────────
+function renderAnalytics() {
+  const arr = DB.events;
+  const ext = arr.filter(e => e.type === 'external');
+
+  // KPI
+  let gp=0, l1=0, l2=0, l3=0, d1=0, d2=0, d3=0, p1=0, p2=0, p3=0, pr=0, cert=0;
+  ext.forEach(e => (e.results||[]).forEach(r => {
+    const c = +(r.count||0);
+    if (r.type==='grandprix') gp += c;
+    if (r.type==='laureate'  && r.degree=='1') l1 += c;
+    if (r.type==='laureate'  && r.degree=='2') l2 += c;
+    if (r.type==='laureate'  && r.degree=='3') l3 += c;
+    if (r.type==='diploma'   && r.degree=='1') d1 += c;
+    if (r.type==='diploma'   && r.degree=='2') d2 += c;
+    if (r.type==='diploma'   && r.degree=='3') d3 += c;
+    if (r.type==='place'     && r.degree=='1') p1 += c;
+    if (r.type==='place'     && r.degree=='2') p2 += c;
+    if (r.type==='place'     && r.degree=='3') p3 += c;
+    if (r.type==='prizor') pr += c;
+    if (r.type==='cert')   cert += c;
+  }));
+
+  const totalWins = ext.reduce((s, e) => s + (e.wins||0), 0);
+  const totalParts= arr.reduce((s, e) => s + (e.participants||0), 0);
+
+  document.getElementById('analyticsKpi').innerHTML = [
+    { label:'Мероприятий (внешних)', val: ext.length, cls:'k1' },
+    { label:'Участников всего',      val: totalParts,  cls:'k2' },
+    { label:'Всего наград',          val: totalWins,   cls:'k3' },
+    { label:'Гран-При',              val: gp,          cls:'k4' },
+    { label:'Лауреаты (сумма)',      val: l1+l2+l3,   cls:'k5' },
+    { label:'Дипломанты (сумма)',    val: d1+d2+d3,   cls:'k6' },
+  ].map(k => `<div class="kpi ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.val}</div></div>`).join('');
+
+  // Awards breakdown
+  document.getElementById('awardsBreakdown').innerHTML = [
+    { icon:'🏆', val: gp,       lbl:'Гран-При' },
+    { icon:'🌟', val: l1,       lbl:'Лауреат 1 ст.' },
+    { icon:'🌟', val: l2,       lbl:'Лауреат 2 ст.' },
+    { icon:'🌟', val: l3,       lbl:'Лауреат 3 ст.' },
+    { icon:'📜', val: d1,       lbl:'Дипломант 1 ст.' },
+    { icon:'📜', val: d2,       lbl:'Дипломант 2 ст.' },
+    { icon:'📜', val: d3,       lbl:'Дипломант 3 ст.' },
+    { icon:'🥇', val: p1,       lbl:'1 место' },
+    { icon:'🥈', val: p2,       lbl:'2 место' },
+    { icon:'🥉', val: p3,       lbl:'3 место' },
+    { icon:'🎖', val: pr,       lbl:'Призёры' },
+    { icon:'📋', val: cert,     lbl:'Сертификаты' },
+  ].map(s => `
+    <div class="stat-item">
+      <span class="stat-icon">${s.icon}</span>
+      <div><div class="stat-val">${s.val}</div><div class="stat-lbl">${s.lbl}</div></div>
+    </div>`).join('');
+
+  // Levels
+  const byLevel = {};
+  ext.forEach(e => {
+    if (!byLevel[e.level]) byLevel[e.level] = { events:0, participants:0, wins:0, gp:0 };
+    byLevel[e.level].events++;
+    byLevel[e.level].participants += e.participants || 0;
+    byLevel[e.level].wins += e.wins || 0;
+    byLevel[e.level].gp += (e.results||[]).filter(r=>r.type==='grandprix').reduce((s,r)=>s+(r.count||0),0);
+  });
+
+  document.getElementById('levelBreakdownTable').innerHTML = Object.keys(byLevel).length ?
+    `<div class="tbl-wrap"><table><thead><tr>
+      <th>Уровень</th><th>Мероприятий</th><th>Участников</th><th>Побед</th><th>Гран-При</th>
+    </tr></thead><tbody>
+    ${Object.entries(byLevel).map(([k, v]) => `<tr>
+      <td><span class="lvl ${levelClass(k)}">${k}</span></td>
+      <td>${v.events}</td>
+      <td>${v.participants}</td>
+      <td style="font-weight:700;color:var(--green)">${v.wins}</td>
+      <td style="color:var(--gold)">${v.gp || 0}</td>
+    </tr>`).join('')}
+    </tbody></table></div>` : '<div class="text-dim">Нет данных</div>';
+
+  // Months
+  const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const byMonth = {};
+  arr.forEach(e => {
+    if (e.date) {
+      const m = MONTHS[new Date(e.date).getMonth()];
+      if (!byMonth[m]) byMonth[m] = { events:0, wins:0, participants:0 };
+      byMonth[m].events++;
+      byMonth[m].wins += e.wins || 0;
+      byMonth[m].participants += e.participants || 0;
     }
+  });
+  const maxM = Math.max(...Object.values(byMonth).map(v => v.events), 1);
+  document.getElementById('monthsBreakdown').innerHTML = Object.entries(byMonth)
+    .sort((a,b) => MONTHS.indexOf(a[0]) - MONTHS.indexOf(b[0]))
+    .map(([k, v]) => `
+    <div class="bar-row-ui">
+      <div class="bar-label-ui">${k}</div>
+      <div class="bar-track-ui">
+        <div class="bar-fill-ui" style="background:#1a56db;width:${Math.round(v.events/maxM*100)}%">
+          ${v.events} меропр. · ${v.participants} уч. · ${v.wins} пб.
+        </div>
+      </div>
+    </div>`).join('') || '<div class="text-dim">Нет данных</div>';
+
+  // Clubs
+  const byClub = {};
+  arr.forEach(e => {
+    if (!e.club) return;
+    if (!byClub[e.club]) byClub[e.club] = { events:0, wins:0, participants:0 };
+    byClub[e.club].events++;
+    byClub[e.club].wins += e.wins || 0;
+    byClub[e.club].participants += e.participants || 0;
+  });
+  const topClubs = Object.entries(byClub).sort((a,b) => b[1].events - a[1].events).slice(0,15);
+  const maxCl = Math.max(...topClubs.map(([,v])=>v.events), 1);
+  document.getElementById('clubsBreakdown').innerHTML = topClubs.map(([k, v]) => `
+    <div class="bar-row-ui">
+      <div class="bar-label-ui" title="${k}">${k}</div>
+      <div class="bar-track-ui">
+        <div class="bar-fill-ui" style="background:#059669;width:${Math.round(v.events/maxCl*100)}%">
+          ${v.events} меропр. · ${v.participants} уч. · ${v.wins} пб.
+        </div>
+      </div>
+    </div>`).join('') || '<div class="text-dim">Нет данных</div>';
 }
 
-function removeItem(i) {
-    let arr = JSON.parse(localStorage.getItem("events"));
-    arr.splice(i,1);
-    localStorage.setItem("events", JSON.stringify(arr));
-    render();
+function switchAnalTab(name) {
+  document.querySelectorAll('#page-analytics .tab').forEach((t, i) => {
+    const names = ['awards','levels','months','clubs'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('anal-' + name).classList.add('active');
 }
 
-function reset() {
-    document.querySelectorAll("input").forEach(i => i.value="");
-    results.innerHTML = "";
+// ──────────────────────────────────────────────────
+// TEACHERS
+// ──────────────────────────────────────────────────
+function renderTeacherPage() {
+  const q = (document.getElementById('teacherSearch')?.value || '').toLowerCase();
+  const arr = DB.events;
+  const map = {};
+
+  arr.forEach(e => {
+    const teachers = (e.teacher || '').split(/[,;\/]+/).map(t => t.trim()).filter(Boolean);
+    teachers.forEach(t => {
+      if (!map[t]) map[t] = { name: t, clubs: new Set(), events: 0, participants: 0, wins: 0, gp: 0, laureates: 0, diplomants: 0, places: 0 };
+      map[t].events++;
+      if (e.club) map[t].clubs.add(e.club);
+      map[t].participants += e.participants || 0;
+      map[t].wins += e.wins || 0;
+      (e.results || []).forEach(r => {
+        const c = +(r.count || 0);
+        if (r.type === 'grandprix') map[t].gp += c;
+        if (r.type === 'laureate')  map[t].laureates += c;
+        if (r.type === 'diploma')   map[t].diplomants += c;
+        if (r.type === 'place')     map[t].places += c;
+      });
+    });
+  });
+
+  let data = Object.values(map).filter(t => !q || t.name.toLowerCase().includes(q));
+  data.sort((a, b) => b.events - a.events);
+
+  document.getElementById('teacherBody').innerHTML = data.length ? data.map(t => `
+    <tr>
+      <td style="font-weight:600">${t.name}</td>
+      <td style="font-size:12px;color:var(--text-2)">${[...t.clubs].join(', ') || '—'}</td>
+      <td style="text-align:center">${t.events}</td>
+      <td style="text-align:center">${t.participants}</td>
+      <td style="text-align:center;font-weight:700;color:var(--green)">${t.wins}</td>
+      <td style="text-align:center;color:var(--gold)">${t.gp}</td>
+      <td style="text-align:center">${t.laureates}</td>
+      <td style="text-align:center">${t.diplomants}</td>
+      <td style="text-align:center">${t.places}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="9"><div class="empty"><div class="e-icon">👩‍🏫</div><div class="e-text">Нет данных о педагогах</div></div></td></tr>';
 }
 
-render();
+// ──────────────────────────────────────────────────
+// EXPORT
+// ──────────────────────────────────────────────────
+function populateExport() {
+  const arr = DB.events;
+  const months = [...new Set(arr.filter(e => e.date).map(e => {
+    const d = new Date(e.date);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  }))].sort();
+  const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
-    function calculateStats() {
-    let arr = JSON.parse(localStorage.getItem("events") || "[]");
+  const expMonth = document.getElementById('expMonth');
+  expMonth.innerHTML = '<option value="">Все</option>';
+  months.forEach(m => {
+    const [y, mo] = m.split('-');
+    expMonth.innerHTML += `<option value="${m}">${MONTHS[parseInt(mo)-1]} ${y}</option>`;
+  });
+}
 
-    let totalEvents = arr.length;
-    let totalParticipants = 0;
+function exportExcel(mode) {
+  if (!window.XLSX) { toast('XLSX не загружен', 'error'); return; }
+  const wb = XLSX.utils.book_new();
 
-    let stats = {
-        grandprix: 0,
-        laureate1: 0,
-        laureate2: 0,
-        laureate3: 0,
-        diploma1: 0,
-        diploma2: 0,
-        diploma3: 0,
-        place1: 0,
-        place2: 0,
-        place3: 0
-    };
+  if (mode === 'journal') {
+    let arr = DB.events;
+    const mo = document.getElementById('expMonth').value;
+    const ty = document.getElementById('expType').value;
+    if (mo) arr = arr.filter(e => e.date?.startsWith(mo));
+    if (ty) arr = arr.filter(e => e.type === ty);
 
+    const rows = [['Дата','Тип','Название','Педагог','Объединение','Уровень','Направленность','Участников','Место проведения','Победы','Гран-При','Лаур.1','Лаур.2','Лаур.3','Дипл.1','Дипл.2','Дипл.3','1 место','2 место','3 место','Призёры','Сертификаты','Номинации','Примечания']];
     arr.forEach(e => {
-
-        totalParticipants += Number(e.participants || 0);
-
-        if (e.results) {
-            e.results.forEach(r => {
-
-                let count = Number(r.count || 0);
-
-                if (r.type === "grandprix") stats.grandprix += count;
-
-                if (r.type === "laureate") {
-                    if (r.degree == "1") stats.laureate1 += count;
-                    if (r.degree == "2") stats.laureate2 += count;
-                    if (r.degree == "3") stats.laureate3 += count;
-                }
-
-                if (r.type === "diploma") {
-                    if (r.degree == "1") stats.diploma1 += count;
-                    if (r.degree == "2") stats.diploma2 += count;
-                    if (r.degree == "3") stats.diploma3 += count;
-                }
-
-                if (r.type === "place") {
-                    if (r.degree == "1") stats.place1 += count;
-                    if (r.degree == "2") stats.place2 += count;
-                    if (r.degree == "3") stats.place3 += count;
-                }
-
-            });
-        }
-
+      let gp=0,l1=0,l2=0,l3=0,d1=0,d2=0,d3=0,p1=0,p2=0,p3=0,pr=0,cert=0;
+      const noms = [];
+      (e.results||[]).forEach(r => {
+        const c = +(r.count||0);
+        if (r.type==='grandprix') gp+=c;
+        if (r.type==='laureate'&&r.degree=='1') l1+=c;
+        if (r.type==='laureate'&&r.degree=='2') l2+=c;
+        if (r.type==='laureate'&&r.degree=='3') l3+=c;
+        if (r.type==='diploma' &&r.degree=='1') d1+=c;
+        if (r.type==='diploma' &&r.degree=='2') d2+=c;
+        if (r.type==='diploma' &&r.degree=='3') d3+=c;
+        if (r.type==='place'   &&r.degree=='1') p1+=c;
+        if (r.type==='place'   &&r.degree=='2') p2+=c;
+        if (r.type==='place'   &&r.degree=='3') p3+=c;
+        if (r.type==='prizor') pr+=c;
+        if (r.type==='cert')   cert+=c;
+        if (r.nomination) noms.push(r.nomination);
+      });
+      rows.push([
+        e.date, e.type==='external'?'Внешнее':'Внутреннее',
+        e.title, e.teacher, e.club,
+        e.level||'', e.direction||'', e.participants||0, e.place||'',
+        e.wins||0, gp, l1, l2, l3, d1, d2, d3, p1, p2, p3, pr, cert,
+        noms.join('; '), e.notes||''
+      ]);
     });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = rows[0].map((_,i) => ({ wch: [12,12,40,25,20,16,18,10,25,8,8,8,8,8,8,8,8,8,8,8,8,8,40,30][i] || 15 }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Журнал');
+    XLSX.writeFile(wb, 'Виктория_Журнал.xlsx');
 
-    document.getElementById("stats").innerHTML = `
-        <b>Всего мероприятий:</b> ${totalEvents}<br>
-        <b>Всего участников:</b> ${totalParticipants}<br><br>
+  } else if (mode === 'teachers') {
+    const map = {};
+    DB.events.forEach(e => {
+      const teachers = (e.teacher||'').split(/[,;\/]+/).map(t=>t.trim()).filter(Boolean);
+      teachers.forEach(t => {
+        if (!map[t]) map[t] = { name:t, clubs:new Set(), events:0, participants:0, wins:0, gp:0, l1:0,l2:0,l3:0,d1:0,d2:0,d3:0,p1:0,p2:0,p3:0,pr:0,cert:0 };
+        map[t].events++;
+        if (e.club) map[t].clubs.add(e.club);
+        map[t].participants += e.participants||0;
+        map[t].wins += e.wins||0;
+        (e.results||[]).forEach(r => {
+          const c=+(r.count||0);
+          if(r.type==='grandprix') map[t].gp+=c;
+          if(r.type==='laureate'&&r.degree=='1') map[t].l1+=c;
+          if(r.type==='laureate'&&r.degree=='2') map[t].l2+=c;
+          if(r.type==='laureate'&&r.degree=='3') map[t].l3+=c;
+          if(r.type==='diploma' &&r.degree=='1') map[t].d1+=c;
+          if(r.type==='diploma' &&r.degree=='2') map[t].d2+=c;
+          if(r.type==='diploma' &&r.degree=='3') map[t].d3+=c;
+          if(r.type==='place'   &&r.degree=='1') map[t].p1+=c;
+          if(r.type==='place'   &&r.degree=='2') map[t].p2+=c;
+          if(r.type==='place'   &&r.degree=='3') map[t].p3+=c;
+          if(r.type==='prizor') map[t].pr+=c;
+          if(r.type==='cert')   map[t].cert+=c;
+        });
+      });
+    });
+    const rows = [['Педагог','Объединения','Мероприятий','Участников','Всего побед','Гран-При','Лаур.1','Лаур.2','Лаур.3','Дипл.1','Дипл.2','Дипл.3','1 место','2 место','3 место','Призёры','Сертификаты']];
+    Object.values(map).sort((a,b)=>b.events-a.events).forEach(t => {
+      rows.push([t.name,[...t.clubs].join(', '),t.events,t.participants,t.wins,t.gp,t.l1,t.l2,t.l3,t.d1,t.d2,t.d3,t.p1,t.p2,t.p3,t.pr,t.cert]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [25,30,12,12,12,10,8,8,8,8,8,8,8,8,8,8,10].map(w=>({wch:w}));
+    XLSX.utils.book_append_sheet(wb, ws, 'По педагогам');
+    XLSX.writeFile(wb, 'Виктория_Педагоги.xlsx');
 
-        <b>Гран-при:</b> ${stats.grandprix}<br>
+  } else if (mode === 'summary') {
+    const arr = DB.events;
+    const ext = arr.filter(e => e.type === 'external');
+    let gp=0,l1=0,l2=0,l3=0,d1=0,d2=0,d3=0,p1=0,p2=0,p3=0,pr=0,cert=0;
+    ext.forEach(e=>(e.results||[]).forEach(r=>{
+      const c=+(r.count||0);
+      if(r.type==='grandprix') gp+=c;
+      if(r.type==='laureate'&&r.degree=='1') l1+=c;
+      if(r.type==='laureate'&&r.degree=='2') l2+=c;
+      if(r.type==='laureate'&&r.degree=='3') l3+=c;
+      if(r.type==='diploma' &&r.degree=='1') d1+=c;
+      if(r.type==='diploma' &&r.degree=='2') d2+=c;
+      if(r.type==='diploma' &&r.degree=='3') d3+=c;
+      if(r.type==='place'   &&r.degree=='1') p1+=c;
+      if(r.type==='place'   &&r.degree=='2') p2+=c;
+      if(r.type==='place'   &&r.degree=='3') p3+=c;
+      if(r.type==='prizor') pr+=c;
+      if(r.type==='cert')   cert+=c;
+    }));
 
-        <b>Лауреаты:</b><br>
-        1 степень: ${stats.laureate1}<br>
-        2 степень: ${stats.laureate2}<br>
-        3 степень: ${stats.laureate3}<br><br>
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['Сводная статистика', DB.settings.org, DB.settings.year],
+      [],
+      ['Показатель', 'Значение'],
+      ['Всего мероприятий', arr.length],
+      ['Внешних конкурсов', ext.length],
+      ['Внутренних', arr.length - ext.length],
+      ['Участников', arr.reduce((s,e)=>s+(e.participants||0),0)],
+      ['Всего побед', ext.reduce((s,e)=>s+(e.wins||0),0)],
+      [],
+      ['Награды', ''],
+      ['Гран-При', gp],
+      ['Лауреат 1 ст.', l1],
+      ['Лауреат 2 ст.', l2],
+      ['Лауреат 3 ст.', l3],
+      ['Дипломант 1 ст.', d1],
+      ['Дипломант 2 ст.', d2],
+      ['Дипломант 3 ст.', d3],
+      ['1 место', p1],
+      ['2 место', p2],
+      ['3 место', p3],
+      ['Призёры', pr],
+      ['Сертификаты', cert],
+    ]);
+    ws['!cols'] = [{wch:25},{wch:15}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Свод');
+    XLSX.writeFile(wb, 'Виктория_Свод.xlsx');
+  }
 
-        <b>Дипломанты:</b><br>
-        1 степень: ${stats.diploma1}<br>
-        2 степень: ${stats.diploma2}<br>
-        3 степень: ${stats.diploma3}<br><br>
-
-        <b>Места:</b><br>
-        1 место: ${stats.place1}<br>
-        2 место: ${stats.place2}<br>
-        3 место: ${stats.place3}<br>
-    `;
+  toast('Файл скачан!', 'success');
 }
 
+function exportJSON() {
+  const data = { events: DB.events, settings: DB.settings, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `victoria_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  toast('Резервная копия сохранена', 'success');
+}
+
+function importJSON(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.events) { toast('Неверный формат файла', 'error'); return; }
+      if (!confirm(`Загрузить ${data.events.length} мероприятий? Текущие данные будут заменены.`)) return;
+      DB.events = data.events;
+      if (data.settings) DB.settings = data.settings;
+      refreshNavBadge();
+      toast(`Загружено ${data.events.length} мероприятий`, 'success');
+    } catch {
+      toast('Ошибка при чтении файла', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ──────────────────────────────────────────────────
+// SETTINGS
+// ──────────────────────────────────────────────────
+function renderSettings() {
+  const s = DB.settings;
+  document.getElementById('sOrgName').value = s.org || '';
+  document.getElementById('sYear').value = s.year || 2025;
+  renderClubList();
+}
+
+function saveSettings() {
+  const s = DB.settings;
+  s.org  = document.getElementById('sOrgName').value;
+  s.year = +document.getElementById('sYear').value;
+  DB.settings = s;
+  toast('Настройки сохранены', 'success');
+}
+
+function renderClubList() {
+  const s = DB.settings;
+  const el = document.getElementById('clubList');
+  if (!el) return;
+  el.innerHTML = (s.clubs || []).map(c => `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+      <span style="flex:1;font-size:13px">${c}</span>
+      <button class="del-btn" style="width:26px;height:26px;font-size:13px" onclick="removeClub('${c}')">✕</button>
+    </div>`).join('') || '<div class="text-dim" style="font-size:13px;margin-bottom:8px">Нет объединений</div>';
+}
+
+function addClub() {
+  const v = document.getElementById('newClub').value.trim();
+  if (!v) return;
+  const s = DB.settings;
+  if (!s.clubs.includes(v)) { s.clubs.push(v); s.clubs.sort(); DB.settings = s; }
+  document.getElementById('newClub').value = '';
+  renderClubList();
+}
+
+function removeClub(name) {
+  const s = DB.settings;
+  s.clubs = s.clubs.filter(c => c !== name);
+  DB.settings = s;
+  renderClubList();
+}
+
+function clearAll() {
+  if (!confirm('Удалить ВСЕ мероприятия? Это нельзя отменить!')) return;
+  if (!confirm('Вы уверены? Создайте резервную копию перед удалением.')) return;
+  DB.events = [];
+  refreshNavBadge();
+  renderDash();
+  toast('База очищена', 'error');
+}
+
+// ──────────────────────────────────────────────────
+// HELPERS
+// ──────────────────────────────────────────────────
+function formatDate(d) {
+  if (!d) return '—';
+  try {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('ru', { day:'2-digit', month:'2-digit', year:'numeric' });
+  } catch { return d; }
+}
+
+function refreshNavBadge() {
+  document.getElementById('navBadge').textContent = DB.events.length;
+}
+
+function toast(msg, type = '') {
+  const area = document.getElementById('toastArea');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = `${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'} ${msg}`;
+  area.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ──────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Load default settings if empty
+  const s = DB.settings;
+  if (!s.clubs) { s.clubs = []; DB.settings = s; }
+
+  refreshNavBadge();
+  renderDash();
+
+  // ESC to close modal
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+});
 </script>
 
 </body>
