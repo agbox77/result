@@ -12,26 +12,15 @@ body {
 }
 
 .container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 40px auto;
     background: white;
     padding: 25px;
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-h1 {
-    margin-bottom: 10px;
-}
-
-.section {
-    margin-top: 20px;
-}
-
-label {
-    display: block;
-    margin-top: 10px;
-    font-weight: 500;
+h2 {
+    margin-top: 30px;
 }
 
 input, select {
@@ -41,34 +30,21 @@ input, select {
 }
 
 button {
-    margin-top: 15px;
-    padding: 10px;
-    border: none;
+    margin-top: 10px;
+    padding: 8px;
     background: #3f51b5;
     color: white;
-    cursor: pointer;
-    border-radius: 5px;
+    border: none;
 }
 
-.result {
+.card {
     border: 1px solid #ddd;
     padding: 10px;
     margin-top: 10px;
-    border-radius: 6px;
-    background: #fafafa;
 }
 
-.hidden {
-    display: none;
-}
+.hidden { display:none; }
 
-pre {
-    background: #222;
-    color: #0f0;
-    padding: 10px;
-    margin-top: 20px;
-    overflow-x: auto;
-}
 </style>
 </head>
 
@@ -76,9 +52,11 @@ pre {
 
 <div class="container">
 
-<h1>Создание мероприятия</h1>
+<h1>Система учета мероприятий</h1>
 
-<div class="section">
+<!-- ФОРМА -->
+<h2>Создать мероприятие</h2>
+
 <label>Тип:</label>
 <select id="type" onchange="toggleType()">
 <option value="">-- выбрать --</option>
@@ -94,11 +72,8 @@ pre {
 
 <label>Объединение:</label>
 <input type="text" id="club">
-</div>
 
-<!-- ВНЕШНЕЕ -->
-<div id="external" class="hidden section">
-
+<div id="external" class="hidden">
 <label>Уровень:</label>
 <select id="level">
 <option>Городской</option>
@@ -112,29 +87,28 @@ pre {
 
 <h3>Результаты</h3>
 <div id="results"></div>
-
-<button onclick="addResult()">+ добавить результат</button>
-
+<button onclick="addResult()">+ результат</button>
 </div>
 
-<!-- ВНУТРЕННЕЕ -->
-<div id="internal" class="hidden section">
-
+<div id="internal" class="hidden">
 <label>Тип активности:</label>
 <input type="text" id="activity">
 
 <label>Участников:</label>
 <input type="number" id="int_participants">
-
 </div>
 
 <button onclick="save()">Сохранить</button>
 
-<pre id="output"></pre>
+<!-- СПИСОК -->
+<h2>Мои мероприятия</h2>
+<div id="list"></div>
 
 </div>
 
 <script>
+
+let editIndex = null;
 
 function toggleType() {
     external.classList.add("hidden");
@@ -144,15 +118,13 @@ function toggleType() {
     if (type.value === "internal") internal.classList.remove("hidden");
 }
 
-function addResult() {
+function addResult(data = {}) {
     const div = document.createElement("div");
-    div.className = "result";
+    div.className = "card";
 
     div.innerHTML = `
-        <label>Номинация</label>
-        <input class="nom">
-
-        <label>Тип результата</label>
+        <input placeholder="Номинация" class="nom" value="${data.nomination||""}">
+        
         <select class="rtype">
             <option value="grandprix">Гран-при</option>
             <option value="laureate">Лауреат</option>
@@ -160,7 +132,6 @@ function addResult() {
             <option value="place">Место</option>
         </select>
 
-        <label>Степень</label>
         <select class="degree">
             <option value="">-</option>
             <option value="1">1</option>
@@ -168,8 +139,7 @@ function addResult() {
             <option value="3">3</option>
         </select>
 
-        <label>Количество</label>
-        <input type="number" class="count">
+        <input type="number" class="count" placeholder="Кол-во" value="${data.count||""}">
 
         <button onclick="this.parentElement.remove()">Удалить</button>
     `;
@@ -177,8 +147,7 @@ function addResult() {
     results.appendChild(div);
 }
 
-function save() {
-
+function getData() {
     let data = {
         type: type.value,
         date: date.value,
@@ -187,13 +156,11 @@ function save() {
     };
 
     if (type.value === "external") {
-
         data.level = level.value;
         data.participants = participants.value;
-
         data.results = [];
 
-        document.querySelectorAll(".result").forEach(r => {
+        document.querySelectorAll(".card").forEach(r => {
             data.results.push({
                 nomination: r.querySelector(".nom").value,
                 type: r.querySelector(".rtype").value,
@@ -208,8 +175,84 @@ function save() {
         data.participants = int_participants.value;
     }
 
-    output.textContent = JSON.stringify(data, null, 2);
+    return data;
 }
+
+function save() {
+    let data = getData();
+    let arr = JSON.parse(localStorage.getItem("events") || "[]");
+
+    if (editIndex !== null) {
+        arr[editIndex] = data;
+        editIndex = null;
+    } else {
+        arr.push(data);
+    }
+
+    localStorage.setItem("events", JSON.stringify(arr));
+    render();
+    reset();
+}
+
+function render() {
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+
+    let arr = JSON.parse(localStorage.getItem("events") || "[]");
+
+    arr.forEach((e, i) => {
+        let div = document.createElement("div");
+        div.className = "card";
+
+        div.innerHTML = `
+            <b>${e.title}</b><br>
+            ${e.date} | ${e.type}<br>
+            <button onclick="edit(${i})">Редактировать</button>
+            <button onclick="removeItem(${i})">Удалить</button>
+        `;
+
+        list.appendChild(div);
+    });
+}
+
+function edit(i) {
+    let e = JSON.parse(localStorage.getItem("events"))[i];
+    editIndex = i;
+
+    type.value = e.type;
+    toggleType();
+
+    date.value = e.date;
+    title.value = e.title;
+    club.value = e.club;
+
+    results.innerHTML = "";
+
+    if (e.type === "external") {
+        level.value = e.level;
+        participants.value = e.participants;
+        e.results.forEach(r => addResult(r));
+    }
+
+    if (e.type === "internal") {
+        activity.value = e.activity;
+        int_participants.value = e.participants;
+    }
+}
+
+function removeItem(i) {
+    let arr = JSON.parse(localStorage.getItem("events"));
+    arr.splice(i,1);
+    localStorage.setItem("events", JSON.stringify(arr));
+    render();
+}
+
+function reset() {
+    document.querySelectorAll("input").forEach(i => i.value="");
+    results.innerHTML = "";
+}
+
+render();
 
 </script>
 
