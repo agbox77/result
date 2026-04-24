@@ -6,85 +6,134 @@
 
 <style>
 body {
-    font-family: Arial, sans-serif;
-    margin: 40px;
-    background: #f5f5f5;
+    font-family: 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+    margin: 0;
 }
 
 .container {
+    max-width: 900px;
+    margin: 40px auto;
     background: white;
-    padding: 20px;
-    border-radius: 10px;
-    max-width: 800px;
-    margin: auto;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+h1 {
+    margin-bottom: 10px;
 }
 
 h2 {
-    margin-top: 20px;
+    margin-top: 25px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
 }
 
 label {
     display: block;
-    margin-top: 10px;
+    margin-top: 12px;
+    font-weight: 500;
 }
 
 input, select, textarea {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     margin-top: 5px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+textarea {
+    resize: vertical;
+}
+
+button {
+    margin-top: 15px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #4CAF50;
+    color: white;
+    cursor: pointer;
+}
+
+button.secondary {
+    background: #888;
+}
+
+.result-block {
+    border: 1px solid #ddd;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 10px;
+    background: #fafafa;
 }
 
 .hidden {
     display: none;
 }
-
-button {
-    margin-top: 20px;
-    padding: 10px 20px;
-    font-size: 16px;
-}
 </style>
-
 </head>
+
 <body>
 
 <div class="container">
 
 <h1>Отчет о мероприятии</h1>
 
-<!-- Выбор типа -->
-<label>Тип отчета:</label>
+<!-- ОРГ БЛОК -->
+<h2>Организационная информация</h2>
+
+<label>ФИО педагога:</label>
+<input type="text" id="teacher">
+
+<label>Территория:</label>
+<select id="territory" onchange="updateDepartments()">
+    <option value="">-- Выберите --</option>
+    <option value="north">Северная</option>
+    <option value="south">Южная</option>
+</select>
+
+<label>Подразделение:</label>
+<select id="department" onchange="updateHeads()"></select>
+
+<label>Руководитель:</label>
+<select id="head"></select>
+
+<label>Объединение:</label>
+<select id="club"></select>
+
+<!-- ТИП -->
+<h2>Тип отчета</h2>
 <select id="reportType" onchange="toggleForm()">
     <option value="">-- Выберите --</option>
-    <option value="external">Внешнее мероприятие (конкурс)</option>
+    <option value="external">Внешнее мероприятие</option>
     <option value="internal">Внутреннее мероприятие</option>
 </select>
 
-<!-- ================= ВНЕШНИЕ ================= -->
+<!-- ВНЕШНИЕ -->
 <div id="externalForm" class="hidden">
 
 <h2>Основная информация</h2>
 <label>Дата:</label>
 <input type="date">
 
-<label>Название мероприятия:</label>
+<label>Название:</label>
 <input type="text">
 
 <label>Организатор:</label>
 <input type="text">
 
 <h2>Тип и уровень</h2>
-<label>Тип участия:</label>
 <select>
     <option>Конкурс</option>
     <option>Фестиваль</option>
     <option>Олимпиада</option>
-    <option>Конференция</option>
 </select>
 
-<label>Уровень:</label>
 <select>
-    <option>Районный</option>
     <option>Городской</option>
     <option>Региональный</option>
     <option>Всероссийский</option>
@@ -95,43 +144,25 @@ button {
 <label>Количество участников:</label>
 <input type="number">
 
-<label>Формат:</label>
 <select>
     <option>Очный</option>
     <option>Дистанционный</option>
 </select>
 
 <h2>Результаты</h2>
-<label>Место:</label>
-<select>
-    <option>1</option>
-    <option>2</option>
-    <option>3</option>
-    <option>Лауреат</option>
-    <option>Дипломант</option>
-    <option>Участие</option>
-</select>
-
-<label>Количество призеров:</label>
-<input type="number">
-
-<h2>Дополнительно</h2>
-<label>Ссылка:</label>
-<input type="text">
-
-<label>Комментарий:</label>
-<textarea></textarea>
+<div id="resultsContainer"></div>
+<button type="button" onclick="addResult()">+ Добавить результат</button>
 
 </div>
 
-<!-- ================= ВНУТРЕННИЕ ================= -->
+<!-- ВНУТРЕННИЕ -->
 <div id="internalForm" class="hidden">
 
 <h2>Основная информация</h2>
 <label>Дата:</label>
 <input type="date">
 
-<label>Название мероприятия:</label>
+<label>Название:</label>
 <input type="text">
 
 <h2>Тип мероприятия</h2>
@@ -139,33 +170,18 @@ button {
     <option>Концерт</option>
     <option>Классный час</option>
     <option>Мастер-класс</option>
-    <option>Выставка</option>
-    <option>Родительское собрание</option>
 </select>
 
 <h2>Охват</h2>
 <label>Количество участников:</label>
 <input type="number">
 
-<label>Категория:</label>
 <select>
     <option>Дети</option>
     <option>Родители</option>
-    <option>Смешанная</option>
 </select>
 
-<h2>Содержание</h2>
-<label>Цель:</label>
-<textarea></textarea>
-
-<label>Описание:</label>
-<textarea></textarea>
-
-<h2>Результат</h2>
-<label>Результат:</label>
-<textarea></textarea>
-
-<label>Выводы:</label>
+<h2>Описание</h2>
 <textarea></textarea>
 
 </div>
@@ -175,24 +191,89 @@ button {
 </div>
 
 <script>
+
+// структура
+const structure = {
+    north: {
+        "Творчество": ["Иванова"],
+        "Спорт": ["Сидоров"]
+    },
+    south: {
+        "Искусство": ["Кузнецова"]
+    }
+};
+
+const clubs = {
+    "Творчество": ["Театр", "ИЗО"],
+    "Спорт": ["Футбол"],
+    "Искусство": ["Музыка"]
+};
+
+function updateDepartments() {
+    const t = territory.value;
+    department.innerHTML = '<option value="">-- Выберите --</option>';
+    for (let d in structure[t] || {}) {
+        department.innerHTML += `<option>${d}</option>`;
+    }
+}
+
+function updateHeads() {
+    const t = territory.value;
+    const d = department.value;
+
+    head.innerHTML = '<option>-- Выберите --</option>';
+    club.innerHTML = '<option>-- Выберите --</option>';
+
+    (structure[t]?.[d] || []).forEach(h => {
+        head.innerHTML += `<option>${h}</option>`;
+    });
+
+    (clubs[d] || []).forEach(c => {
+        club.innerHTML += `<option>${c}</option>`;
+    });
+}
+
 function toggleForm() {
-    const type = document.getElementById("reportType").value;
+    externalForm.classList.add("hidden");
+    internalForm.classList.add("hidden");
 
-    document.getElementById("externalForm").classList.add("hidden");
-    document.getElementById("internalForm").classList.add("hidden");
-
-    if (type === "external") {
-        document.getElementById("externalForm").classList.remove("hidden");
+    if (reportType.value === "external") {
+        externalForm.classList.remove("hidden");
+    } else if (reportType.value === "internal") {
+        internalForm.classList.remove("hidden");
     }
+}
 
-    if (type === "internal") {
-        document.getElementById("internalForm").classList.remove("hidden");
-    }
+function addResult() {
+    const div = document.createElement("div");
+    div.className = "result-block";
+
+    div.innerHTML = `
+        <label>Номинация:</label>
+        <input type="text">
+
+        <label>Место:</label>
+        <select>
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+            <option>Лауреат</option>
+            <option>Дипломант</option>
+        </select>
+
+        <label>Количество:</label>
+        <input type="number">
+
+        <button type="button" class="secondary" onclick="this.parentElement.remove()">Удалить</button>
+    `;
+
+    resultsContainer.appendChild(div);
 }
 
 function submitForm() {
-    alert("Пока это прототип 🙂\nДанные можно будет отправлять на сервер позже.");
+    alert("Форма готова к подключению backend 🚀");
 }
+
 </script>
 
 </body>
