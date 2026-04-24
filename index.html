@@ -104,6 +104,10 @@ button {
 <h2>Мои мероприятия</h2>
 <div id="list"></div>
 
+<h2>Статистика</h2>
+
+<div id="stats"></div>    
+
 </div>
 
 <script>
@@ -197,6 +201,7 @@ function save() {
 function render() {
     const list = document.getElementById("list");
     list.innerHTML = "";
+    calculateStats();
 
     let arr = JSON.parse(localStorage.getItem("events") || "[]");
 
@@ -253,6 +258,82 @@ function reset() {
 }
 
 render();
+
+    function calculateStats() {
+    let arr = JSON.parse(localStorage.getItem("events") || "[]");
+
+    let totalEvents = arr.length;
+    let totalParticipants = 0;
+
+    let stats = {
+        grandprix: 0,
+        laureate1: 0,
+        laureate2: 0,
+        laureate3: 0,
+        diploma1: 0,
+        diploma2: 0,
+        diploma3: 0,
+        place1: 0,
+        place2: 0,
+        place3: 0
+    };
+
+    arr.forEach(e => {
+
+        totalParticipants += Number(e.participants || 0);
+
+        if (e.results) {
+            e.results.forEach(r => {
+
+                let count = Number(r.count || 0);
+
+                if (r.type === "grandprix") stats.grandprix += count;
+
+                if (r.type === "laureate") {
+                    if (r.degree == "1") stats.laureate1 += count;
+                    if (r.degree == "2") stats.laureate2 += count;
+                    if (r.degree == "3") stats.laureate3 += count;
+                }
+
+                if (r.type === "diploma") {
+                    if (r.degree == "1") stats.diploma1 += count;
+                    if (r.degree == "2") stats.diploma2 += count;
+                    if (r.degree == "3") stats.diploma3 += count;
+                }
+
+                if (r.type === "place") {
+                    if (r.degree == "1") stats.place1 += count;
+                    if (r.degree == "2") stats.place2 += count;
+                    if (r.degree == "3") stats.place3 += count;
+                }
+
+            });
+        }
+
+    });
+
+    document.getElementById("stats").innerHTML = `
+        <b>Всего мероприятий:</b> ${totalEvents}<br>
+        <b>Всего участников:</b> ${totalParticipants}<br><br>
+
+        <b>Гран-при:</b> ${stats.grandprix}<br>
+
+        <b>Лауреаты:</b><br>
+        1 степень: ${stats.laureate1}<br>
+        2 степень: ${stats.laureate2}<br>
+        3 степень: ${stats.laureate3}<br><br>
+
+        <b>Дипломанты:</b><br>
+        1 степень: ${stats.diploma1}<br>
+        2 степень: ${stats.diploma2}<br>
+        3 степень: ${stats.diploma3}<br><br>
+
+        <b>Места:</b><br>
+        1 место: ${stats.place1}<br>
+        2 место: ${stats.place2}<br>
+        3 место: ${stats.place3}<br>
+    `;
+}
 
 </script>
 
