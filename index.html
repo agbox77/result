@@ -2,77 +2,72 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Отчет педагога</title>
+<title>Система учета мероприятий</title>
 
 <style>
 body {
     font-family: 'Segoe UI', sans-serif;
-    background: #f0f2f5;
+    background: #f4f6f9;
     margin: 0;
 }
 
 .container {
-    max-width: 900px;
+    max-width: 800px;
     margin: 40px auto;
     background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 h1 {
     margin-bottom: 10px;
 }
 
-h2 {
-    margin-top: 25px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
+.section {
+    margin-top: 20px;
 }
 
 label {
     display: block;
-    margin-top: 12px;
+    margin-top: 10px;
     font-weight: 500;
 }
 
-input, select, textarea {
+input, select {
     width: 100%;
-    padding: 10px;
+    padding: 8px;
     margin-top: 5px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-}
-
-textarea {
-    resize: vertical;
 }
 
 button {
     margin-top: 15px;
-    padding: 10px 16px;
+    padding: 10px;
     border: none;
-    border-radius: 6px;
-    background: #4CAF50;
+    background: #3f51b5;
     color: white;
     cursor: pointer;
+    border-radius: 5px;
 }
 
-button.secondary {
-    background: #888;
-}
-
-.result-block {
+.result {
     border: 1px solid #ddd;
-    padding: 12px;
-    border-radius: 8px;
+    padding: 10px;
     margin-top: 10px;
+    border-radius: 6px;
     background: #fafafa;
 }
 
 .hidden {
     display: none;
+}
+
+pre {
+    background: #222;
+    color: #0f0;
+    padding: 10px;
+    margin-top: 20px;
+    overflow-x: auto;
 }
 </style>
 </head>
@@ -81,197 +76,139 @@ button.secondary {
 
 <div class="container">
 
-<h1>Отчет о мероприятии</h1>
+<h1>Создание мероприятия</h1>
 
-<!-- ОРГ БЛОК -->
-<h2>Организационная информация</h2>
-
-<label>ФИО педагога:</label>
-<input type="text" id="teacher">
-
-<label>Территория:</label>
-<select id="territory" onchange="updateDepartments()">
-    <option value="">-- Выберите --</option>
-    <option value="north">Северная</option>
-    <option value="south">Южная</option>
+<div class="section">
+<label>Тип:</label>
+<select id="type" onchange="toggleType()">
+<option value="">-- выбрать --</option>
+<option value="external">Внешнее</option>
+<option value="internal">Внутреннее</option>
 </select>
 
-<label>Подразделение:</label>
-<select id="department" onchange="updateHeads()"></select>
+<label>Дата:</label>
+<input type="date" id="date">
 
-<label>Руководитель:</label>
-<select id="head"></select>
+<label>Название:</label>
+<input type="text" id="title">
 
 <label>Объединение:</label>
-<select id="club"></select>
+<input type="text" id="club">
+</div>
 
-<!-- ТИП -->
-<h2>Тип отчета</h2>
-<select id="reportType" onchange="toggleForm()">
-    <option value="">-- Выберите --</option>
-    <option value="external">Внешнее мероприятие</option>
-    <option value="internal">Внутреннее мероприятие</option>
+<!-- ВНЕШНЕЕ -->
+<div id="external" class="hidden section">
+
+<label>Уровень:</label>
+<select id="level">
+<option>Городской</option>
+<option>Региональный</option>
+<option>Всероссийский</option>
+<option>Международный</option>
 </select>
 
-<!-- ВНЕШНИЕ -->
-<div id="externalForm" class="hidden">
+<label>Участников:</label>
+<input type="number" id="participants">
 
-<h2>Основная информация</h2>
-<label>Дата:</label>
-<input type="date">
+<h3>Результаты</h3>
+<div id="results"></div>
 
-<label>Название:</label>
-<input type="text">
-
-<label>Организатор:</label>
-<input type="text">
-
-<h2>Тип и уровень</h2>
-<select>
-    <option>Конкурс</option>
-    <option>Фестиваль</option>
-    <option>Олимпиада</option>
-</select>
-
-<select>
-    <option>Городской</option>
-    <option>Региональный</option>
-    <option>Всероссийский</option>
-    <option>Международный</option>
-</select>
-
-<h2>Участие</h2>
-<label>Количество участников:</label>
-<input type="number">
-
-<select>
-    <option>Очный</option>
-    <option>Дистанционный</option>
-</select>
-
-<h2>Результаты</h2>
-<div id="resultsContainer"></div>
-<button type="button" onclick="addResult()">+ Добавить результат</button>
+<button onclick="addResult()">+ добавить результат</button>
 
 </div>
 
-<!-- ВНУТРЕННИЕ -->
-<div id="internalForm" class="hidden">
+<!-- ВНУТРЕННЕЕ -->
+<div id="internal" class="hidden section">
 
-<h2>Основная информация</h2>
-<label>Дата:</label>
-<input type="date">
+<label>Тип активности:</label>
+<input type="text" id="activity">
 
-<label>Название:</label>
-<input type="text">
-
-<h2>Тип мероприятия</h2>
-<select>
-    <option>Концерт</option>
-    <option>Классный час</option>
-    <option>Мастер-класс</option>
-</select>
-
-<h2>Охват</h2>
-<label>Количество участников:</label>
-<input type="number">
-
-<select>
-    <option>Дети</option>
-    <option>Родители</option>
-</select>
-
-<h2>Описание</h2>
-<textarea></textarea>
+<label>Участников:</label>
+<input type="number" id="int_participants">
 
 </div>
 
-<button onclick="submitForm()">Отправить</button>
+<button onclick="save()">Сохранить</button>
+
+<pre id="output"></pre>
 
 </div>
 
 <script>
 
-// структура
-const structure = {
-    north: {
-        "Творчество": ["Иванова"],
-        "Спорт": ["Сидоров"]
-    },
-    south: {
-        "Искусство": ["Кузнецова"]
-    }
-};
+function toggleType() {
+    external.classList.add("hidden");
+    internal.classList.add("hidden");
 
-const clubs = {
-    "Творчество": ["Театр", "ИЗО"],
-    "Спорт": ["Футбол"],
-    "Искусство": ["Музыка"]
-};
-
-function updateDepartments() {
-    const t = territory.value;
-    department.innerHTML = '<option value="">-- Выберите --</option>';
-    for (let d in structure[t] || {}) {
-        department.innerHTML += `<option>${d}</option>`;
-    }
-}
-
-function updateHeads() {
-    const t = territory.value;
-    const d = department.value;
-
-    head.innerHTML = '<option>-- Выберите --</option>';
-    club.innerHTML = '<option>-- Выберите --</option>';
-
-    (structure[t]?.[d] || []).forEach(h => {
-        head.innerHTML += `<option>${h}</option>`;
-    });
-
-    (clubs[d] || []).forEach(c => {
-        club.innerHTML += `<option>${c}</option>`;
-    });
-}
-
-function toggleForm() {
-    externalForm.classList.add("hidden");
-    internalForm.classList.add("hidden");
-
-    if (reportType.value === "external") {
-        externalForm.classList.remove("hidden");
-    } else if (reportType.value === "internal") {
-        internalForm.classList.remove("hidden");
-    }
+    if (type.value === "external") external.classList.remove("hidden");
+    if (type.value === "internal") internal.classList.remove("hidden");
 }
 
 function addResult() {
     const div = document.createElement("div");
-    div.className = "result-block";
+    div.className = "result";
 
     div.innerHTML = `
-        <label>Номинация:</label>
-        <input type="text">
+        <label>Номинация</label>
+        <input class="nom">
 
-        <label>Место:</label>
-        <select>
-            <option>1</option>
-            <option>2</option>
-            <option>3</option>
-            <option>Лауреат</option>
-            <option>Дипломант</option>
+        <label>Тип результата</label>
+        <select class="rtype">
+            <option value="grandprix">Гран-при</option>
+            <option value="laureate">Лауреат</option>
+            <option value="diploma">Дипломант</option>
+            <option value="place">Место</option>
         </select>
 
-        <label>Количество:</label>
-        <input type="number">
+        <label>Степень</label>
+        <select class="degree">
+            <option value="">-</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+        </select>
 
-        <button type="button" class="secondary" onclick="this.parentElement.remove()">Удалить</button>
+        <label>Количество</label>
+        <input type="number" class="count">
+
+        <button onclick="this.parentElement.remove()">Удалить</button>
     `;
 
-    resultsContainer.appendChild(div);
+    results.appendChild(div);
 }
 
-function submitForm() {
-    alert("Форма готова к подключению backend 🚀");
+function save() {
+
+    let data = {
+        type: type.value,
+        date: date.value,
+        title: title.value,
+        club: club.value
+    };
+
+    if (type.value === "external") {
+
+        data.level = level.value;
+        data.participants = participants.value;
+
+        data.results = [];
+
+        document.querySelectorAll(".result").forEach(r => {
+            data.results.push({
+                nomination: r.querySelector(".nom").value,
+                type: r.querySelector(".rtype").value,
+                degree: r.querySelector(".degree").value,
+                count: r.querySelector(".count").value
+            });
+        });
+    }
+
+    if (type.value === "internal") {
+        data.activity = activity.value;
+        data.participants = int_participants.value;
+    }
+
+    output.textContent = JSON.stringify(data, null, 2);
 }
 
 </script>
