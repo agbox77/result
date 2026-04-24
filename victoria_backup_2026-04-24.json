@@ -1,0 +1,33 @@
+{
+  "events": [
+    {
+      "id": "mocpuyfik1oe",
+      "type": "external",
+      "date": "2025-09-01",
+      "club": "",
+      "title": "ТЕСТ Название мероприятия",
+      "teacher": "Педагог(и)",
+      "place": "Москва",
+      "createdAt": "2026-04-24T09:36:54.990Z",
+      "updatedAt": "2026-04-24T09:36:54.991Z",
+      "level": "Международный",
+      "direction": "Художественная",
+      "participants": 22,
+      "results": [
+        {
+          "nomination": "",
+          "type": "grandprix",
+          "degree": "",
+          "count": 1
+        }
+      ],
+      "wins": 1
+    }
+  ],
+  "settings": {
+    "org": "ДЮЦ «Виктория»",
+    "year": 2025,
+    "clubs": []
+  },
+  "exportedAt": "2026-04-24T09:38:57.718Z"
+}
